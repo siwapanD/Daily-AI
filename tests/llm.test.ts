@@ -66,6 +66,20 @@ describe("providers", () => {
     expect((fetchMock.mock.calls[0][1].headers as Record<string, string>).authorization).toBe("Bearer key");
   });
 
+  it("uses the resolved (DB-activated) prompt version", async () => {
+    const fetchMock = vi.fn<(url: string, init: RequestInit) => Promise<Response>>(async () => new Response(JSON.stringify({
+      choices: [{ message: { content: '{"categories":["MCP"],"impact":1,"novelty":1,"relevance":1,"experimentValue":1}' } }],
+    })));
+    vi.stubGlobal("fetch", fetchMock);
+    const p = new OpenAICompatibleProvider("https://llm.example/v1", "");
+    p.resolvePrompt = async () => ({ version: 7, system: "CUSTOM SYSTEM", user: "T={{title}}" });
+    const chat = vi.spyOn(p, "chat");
+    await p.classify({ title: "X", content: "" }, { model: "m", maxTokens: 10, task: "classify" });
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1].body));
+    expect(body.messages).toEqual([{ role: "system", content: "CUSTOM SYSTEM" }, { role: "user", content: "T=X" }]);
+    expect(chat.mock.calls[0][1].promptVersion).toBe("importance-classifier-v7");
+  });
+
   it("surfaces HTTP errors", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("bad key", { status: 401 })));
     const p = new OpenAICompatibleProvider("https://llm.example/v1", "key");

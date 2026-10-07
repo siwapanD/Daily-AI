@@ -22,6 +22,7 @@ import { upsertRadarItem, deleteRadarItem } from "@/lib/services/radar";
 import { addWatchItem, updateWatchItem, deleteWatchItem } from "@/lib/services/watch";
 import { setSecret, SECRET_KEYS } from "@/lib/services/settings";
 import { addPlaybookRule } from "@/lib/services/playbook";
+import { activatePromptVersion, createPromptVersion } from "@/lib/services/prompts";
 import { getArticle } from "@/lib/services/knowledge";
 
 // ---------- helpers ----------
@@ -397,4 +398,26 @@ export async function saveSecretAction(fd: FormData) {
     await setSecret(d.name, d.value);
     return d.value ? `${d.name} saved (encrypted).` : `${d.name} removed.`;
   }, ["/settings"]);
+}
+
+// ---------- prompts ----------
+
+const promptKey = z.string().regex(/^[a-z0-9-]{1,60}$/);
+
+export async function activatePromptAction(fd: FormData) {
+  await run("/settings/prompts", async () => {
+    const d = z.object({ key: promptKey, version: z.coerce.number().int().positive() }).parse(form(fd));
+    await activatePromptVersion(d.key, d.version);
+    return `${d.key}-v${d.version} is now active.`;
+  }, ["/settings/prompts", "/settings"]);
+}
+
+export async function createPromptVersionAction(fd: FormData) {
+  await run("/settings/prompts", async () => {
+    const d = z.object({
+      key: promptKey, system: str(20000).min(1), user: str(5000).min(1), activate: z.string().optional(),
+    }).parse(form(fd));
+    const v = await createPromptVersion(d.key, d.system, d.user, d.activate === "on");
+    return `${d.key}-v${v} created${d.activate === "on" ? " and activated" : ""}.`;
+  }, ["/settings/prompts", "/settings"]);
 }

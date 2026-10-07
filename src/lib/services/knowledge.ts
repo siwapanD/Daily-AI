@@ -1,5 +1,6 @@
 import { and, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 import { db, schema } from "../db";
+import { ftsMatch } from "./fts";
 import { getAI, withFallback } from "../llm";
 import { CATEGORY_TO_AREA, type Category } from "../constants";
 
@@ -82,8 +83,7 @@ export async function listKnowledge(f: { q?: string; area?: string; status?: str
   if (f.status) conds.push(eq(schema.knowledgeItems.status, f.status));
   if (f.tag) conds.push(sql`${f.tag} = any(${schema.knowledgeItems.tags})`);
   if (f.q) {
-    const like = `%${f.q}%`;
-    conds.push(or(ilike(schema.knowledgeItems.title, like), ilike(schema.knowledgeItems.contentMd, like))!);
+    conds.push(or(ftsMatch("knowledge_items", f.q), ilike(schema.knowledgeItems.title, `%${f.q}%`))!);
   }
   return db.select().from(schema.knowledgeItems).where(conds.length ? and(...conds) : undefined)
     .orderBy(desc(schema.knowledgeItems.updatedAt)).limit(200);

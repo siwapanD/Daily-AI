@@ -4,6 +4,7 @@ import { env } from "../env";
 import { logger, errMsg } from "../logger";
 import { sha256 } from "../security/crypto";
 import { getSecret } from "../services/settings";
+import { getActivePrompt } from "../services/prompts";
 import { HeuristicProvider } from "./heuristic";
 import { OpenAICompatibleProvider } from "./openai-compatible";
 import { AnthropicProvider } from "./anthropic";
@@ -150,6 +151,7 @@ export async function getAI(): Promise<AIConfig> {
       cheap: { ...base, model: "heuristic" }, strong: { ...base, model: "heuristic" },
     };
   }
+  provider.resolvePrompt = getActivePrompt;
   return {
     provider: metered(provider, cfg.fallbackModel),
     heuristic,

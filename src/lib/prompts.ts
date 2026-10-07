@@ -112,9 +112,30 @@ export function promptVersionId(key: string): string {
   return `${key}-v${p.active}`;
 }
 
-export function renderPrompt(key: string, vars: Record<string, string | number | null | undefined>) {
+/** A concrete prompt version (from code, or created in the UI and stored in the DB). */
+export interface ResolvedPrompt {
+  version: number;
+  system: string;
+  user: string;
+}
+
+export function renderPrompt(
+  key: string,
+  vars: Record<string, string | number | null | undefined>,
+  override?: ResolvedPrompt | null,
+) {
   const p = PROMPTS[key];
-  const v = p.versions[p.active];
+  const v = override ?? { version: p.active, ...p.versions[p.active] };
   const fill = (s: string) => s.replace(/\{\{(\w+)\}\}/g, (_, k: string) => String(vars[k] ?? ""));
-  return { system: fill(v.system), user: fill(v.user), version: promptVersionId(key) };
+  return { system: fill(v.system), user: fill(v.user), version: `${key}-v${v.version}` };
+}
+
+/** DB templates are stored as "SYSTEM:\n…\n\nUSER:\n…". */
+export function formatTemplate(system: string, user: string): string {
+  return `SYSTEM:\n${system}\n\nUSER:\n${user}`;
+}
+
+export function parseTemplate(template: string): { system: string; user: string } {
+  const m = template.match(/^SYSTEM:\n([\s\S]*?)\n\nUSER:\n([\s\S]*)$/);
+  return m ? { system: m[1], user: m[2] } : { system: template, user: "{{content}}" };
 }

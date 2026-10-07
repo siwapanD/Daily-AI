@@ -1,4 +1,4 @@
-import { renderPrompt } from "../prompts";
+import { renderPrompt, type ResolvedPrompt } from "../prompts";
 import { CATEGORIES, type Category } from "../constants";
 import { truncate } from "../pipeline/normalize";
 import { extractJson, classifySchema, analyzeSchema, experimentSchema } from "./json";
@@ -23,13 +23,16 @@ export abstract class PromptedProvider implements LLMProvider {
   abstract readonly name: string;
   protected abstract complete(messages: ChatMessage[], opts: ChatOptions): Promise<ChatResult>;
 
+  /** Resolves the active prompt version (DB-backed in the app; code defaults when null). */
+  resolvePrompt: (key: string) => Promise<ResolvedPrompt | null> = async () => null;
+
   /** Overridden by the gateway wrapper for metering; adapters implement `complete`. */
   chat(messages: ChatMessage[], opts: ChatOptions): Promise<ChatResult> {
     return this.complete(messages, opts);
   }
 
   private async run(key: string, item: ItemInput, opts: ChatOptions, contentLimit: number) {
-    const p = renderPrompt(key, vars(item, contentLimit));
+    const p = renderPrompt(key, vars(item, contentLimit), await this.resolvePrompt(key));
     return this.chat(
       [{ role: "system", content: p.system }, { role: "user", content: p.user }],
       { ...opts, promptVersion: p.version },

@@ -27,10 +27,10 @@ Status: ✅ done · ⏳ partial · ⬜ not started. Each task: Goal / Files / De
 |---|---|---|
 | T20 | Technology radar page + auto-update from decisions | ✅ |
 | T21 | Technology timeline page | ✅ |
-| T22 | Global search (ILIKE across entities) | ✅ |
+| T22 | Global search across entities | ✅ |
 | T23 | Watch list (boost + auto GitHub source for repos) | ✅ |
-| T24 | Prompt version UI (view/activate) | ⬜ (prompts are versioned in DB; read-only list in Settings) |
-| T25 | Full-text search with tsvector ranking | ⬜ |
+| T24 | Prompt version UI: view, create, activate, compare usage per version (Settings → Prompts) | ✅ |
+| T25 | Full-text search: generated tsvector columns + GIN, ranked, web query syntax | ✅ |
 
 ## P2 (not in MVP)
 

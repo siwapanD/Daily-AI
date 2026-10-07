@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import { listSources } from "@/lib/services/discovery";
@@ -165,13 +166,13 @@ export default async function SettingsPage() {
         </Section>
       </div>
 
-      <Section title="Prompt versions">
+      <Section title="Prompt versions" action={<Link href="/settings/prompts" className="link text-xs">Manage prompts →</Link>}>
         <ul className="grid gap-1 text-sm sm:grid-cols-2">
           {prompts.map((p) => (
             <li key={`${p.key}-${p.version}`}><span className="font-mono text-xs">{p.key}-v{p.version}</span>{p.active && <span className="ml-1 text-xs text-emerald-300">active</span>} <span className="text-xs text-slate-500">— {p.description}</span></li>
           ))}
         </ul>
-        <p className="mt-2 text-xs text-slate-500">Prompts are defined in src/lib/prompts.ts and mirrored here for traceability.</p>
+        <p className="mt-2 text-xs text-slate-500">Defaults live in src/lib/prompts.ts. Create, compare and activate versions under Manage prompts.</p>
       </Section>
     </div>
   );

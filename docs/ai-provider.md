@@ -43,4 +43,12 @@ Estimated cost comes from a built-in price table (Claude Haiku 4.5 $1/$5, Sonnet
 With the defaults (about 100 new items/day, 15 strong analyses), expect roughly 150–250k tokens per day.
 
 ## Prompts
-Prompts are versioned in `src/lib/prompts.ts`: `importance-classifier-v1`, `daily-analysis-v1`, `knowledge-summary-v1`, `experiment-generator-v1`, `digest-summary-v1`. The seed mirrors them into `prompts` / `prompt_versions`, and each `llm_runs` row records the version used, so you can benchmark prompt changes. To change a prompt, add version 2 and set `active: 2`.
+Default prompts are defined in `src/lib/prompts.ts`: `importance-classifier-v1`, `daily-analysis-v1`, `knowledge-summary-v1`, `experiment-generator-v1`, `digest-summary-v1`. The seed mirrors them into `prompts` / `prompt_versions`, and each `llm_runs` row records the version used.
+
+**Settings → Manage prompts** (`/settings/prompts`) lets you:
+- read every version's template,
+- create a new version (pre-filled from the active one),
+- activate any version (takes effect within 30 seconds),
+- compare versions on calls, failures, tokens, cost and average latency.
+
+The DB is authoritative for which version is active and for its template. Re-running the seed never overrides a version you activated in the UI. To ship a new default in code, add version N to `PROMPTS` with `active: N`. It becomes active only for prompts that have no active version yet; otherwise activate it in the UI.

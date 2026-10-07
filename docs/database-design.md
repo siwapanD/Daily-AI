@@ -40,6 +40,7 @@ system_settings · job_runs · fetch_logs · playbook_versions
 
 * `articles(canonical_url)` unique, `articles(title_hash)`, `articles(daily_score desc)`, `articles(published_at desc)`, `articles(status)`.
 * `knowledge_items(area)`, `experiments(code)` unique, `llm_runs(created_at)`.
+* Full-text search (migration `0001_fulltext_search`, custom SQL): generated `search tsvector` columns with GIN indexes on `articles` (title A, summary/excerpt B, content C) and `knowledge_items` (title A, summary B, content C), using the language-agnostic `simple` config. Queries use `websearch_to_tsquery` (phrases in quotes, `OR`, `-exclude`) ranked by `ts_rank`, with a substring match on titles as a fallback for partial words. These columns are not in the Drizzle schema, so ordinary selects never load the vectors.
 
 ## Deduplication (MVP)
 

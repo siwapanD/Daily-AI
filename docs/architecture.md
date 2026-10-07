@@ -105,6 +105,10 @@ Each source fetch is isolated: timeout (15s), 1 retry, 2 MB body cap, failure lo
 * In-memory rate limiting on expensive endpoints (fetch/analyze/manual URL/LLM).
 * Optional Basic Auth for the whole app (`APP_PASSWORD`), `CRON_SECRET` bearer for jobs. `/api/health` is public.
 
+## 7b. Search
+
+Ranked full-text search over discoveries and knowledge (PostgreSQL `tsvector` + GIN, `websearch_to_tsquery`), plus a title substring fallback. Experiments and technologies are matched with `ILIKE`. Upgrade path: pgvector embeddings for semantic search.
+
 ## 8. Observability
 
 Structured JSON logs (`src/lib/logger.ts`), `job_runs` (job history), `fetch_logs` (fetch history), `llm_runs` (usage + cost). Settings page shows all of them.

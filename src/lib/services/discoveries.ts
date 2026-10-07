@@ -1,5 +1,6 @@
 import { and, desc, eq, gte, ilike, inArray, isNull, ne, or, sql, type SQL } from "drizzle-orm";
 import { db, schema } from "../db";
+import { ftsMatch } from "./fts";
 
 export interface DiscoveryFilter {
   q?: string;
@@ -57,7 +58,7 @@ function hasTag(tag: string) {
 export async function listDiscoveries(f: DiscoveryFilter = {}) {
   const conds: SQL[] = [];
   if (!f.showIgnored) conds.push(notIgnored());
-  if (f.q) conds.push(or(ilike(schema.articles.title, `%${f.q}%`), ilike(schema.articles.excerpt, `%${f.q}%`))!);
+  if (f.q) conds.push(or(ftsMatch("articles", f.q), ilike(schema.articles.title, `%${f.q}%`))!);
   if (f.category) conds.push(hasTag(f.category));
   if (f.recommendation) conds.push(eq(schema.articles.recommendation, f.recommendation));
   if (f.minScore) conds.push(gte(schema.articles.dailyScore, f.minScore));

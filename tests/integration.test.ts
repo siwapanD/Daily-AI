@@ -33,6 +33,9 @@ const { listRadar } = await import("@/lib/services/radar");
 const { latestPlaybook } = await import("@/lib/services/playbook");
 const { todayData } = await import("@/lib/services/discoveries");
 const { setSecret, getSecret } = await import("@/lib/services/settings");
+const { searchAll } = await import("@/lib/services/search");
+const { listDiscoveries } = await import("@/lib/services/discoveries");
+const { createPromptVersion, activatePromptVersion, getActivePrompt, listPromptVersions } = await import("@/lib/services/prompts");
 const { eq } = await import("drizzle-orm");
 
 describe.skipIf(!available)("pipeline integration", () => {
@@ -122,6 +125,30 @@ describe.skipIf(!available)("pipeline integration", () => {
     const t = await todayData();
     expect(t.top.length).toBeGreaterThan(0);
     expect(t.stats.total).toBe(3);
+  });
+
+  it("full-text search ranks title matches and supports web syntax", async () => {
+    const r = await searchAll("planning mode");
+    expect(r.articles[0]?.title).toBe("anthropics/claude-code v9.0.0"); // matched in body, not title
+    expect(r.knowledge.length).toBeGreaterThan(0);
+    expect((await searchAll("pasta -recipes")).articles).toHaveLength(0);
+    expect((await searchAll('"coding model"')).articles.map((a) => a.title)).toEqual(["Introducing a new open-weights coding model"]);
+    expect((await listDiscoveries({ q: "context window" })).rows).toHaveLength(1);
+    expect((await searchAll("claude-co")).articles.length).toBe(1); // substring fallback on titles
+  });
+
+  it("creates, activates and resolves prompt versions; seed keeps the UI choice", async () => {
+    expect((await getActivePrompt("digest-summary"))?.version).toBe(1);
+    const v = await createPromptVersion("digest-summary", "Be terse.", "{{items}}", true);
+    expect(v).toBe(2);
+    const active = await getActivePrompt("digest-summary");
+    expect(active).toMatchObject({ version: 2, system: "Be terse.", user: "{{items}}" });
+    await seed();
+    const rows = (await listPromptVersions()).filter((r) => r.key === "digest-summary");
+    expect(rows.filter((r) => r.isActive).map((r) => r.version)).toEqual([2]);
+    await activatePromptVersion("digest-summary", 1);
+    expect((await getActivePrompt("digest-summary"))?.version).toBe(1);
+    await expect(activatePromptVersion("digest-summary", 99)).rejects.toThrow(/does not exist/);
   });
 
   it("stores secrets encrypted", async () => {

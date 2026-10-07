@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { db, schema } from "../db";
 import { getAI, withFallback } from "../llm";
 import { renderPrompt } from "../prompts";
+import { getActivePrompt } from "./prompts";
 import { listDiscoveries, type DiscoveryRow } from "./discoveries";
 import { env } from "../env";
 
@@ -37,7 +38,7 @@ export async function generateDigest(date = new Date()) {
   const ai = await getAI();
   if (!ai.isHeuristic && items.length) {
     const list = items.slice(0, 12).map((r) => `- ${r.title} (score ${r.dailyScore}, ${r.recommendation}): ${r.summary ?? r.excerpt ?? ""}`).join("\n");
-    const p = renderPrompt("digest-summary", { items: list });
+    const p = renderPrompt("digest-summary", { items: list }, await getActivePrompt("digest-summary"));
     const res = await withFallback("digest", async (prov) => {
       const r = await prov.chat([{ role: "system", content: p.system }, { role: "user", content: p.user }],
         { ...ai.strong, task: "digest", promptVersion: p.version });

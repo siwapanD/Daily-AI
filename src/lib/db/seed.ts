@@ -1,6 +1,6 @@
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, schema } from "./index";
-import { PROMPTS } from "../prompts";
+import { PROMPTS, formatTemplate } from "../prompts";
 import { PLAYBOOK_V1 } from "../services/playbook";
 import { logger } from "../logger";
 
@@ -44,9 +44,13 @@ export async function seed() {
     const [row] = await db.insert(schema.prompts).values({ key: p.key, description: p.description })
       .onConflictDoUpdate({ target: schema.prompts.key, set: { description: p.description } })
       .returning();
+    // A version activated in the UI wins over the code default, so only mark the code
+    // version active when the prompt has no active version yet.
+    const active = await db.select({ id: schema.promptVersions.id }).from(schema.promptVersions)
+      .where(and(eq(schema.promptVersions.promptId, row.id), eq(schema.promptVersions.isActive, true)));
     for (const [v, t] of Object.entries(p.versions)) {
       await db.insert(schema.promptVersions)
-        .values({ promptId: row.id, version: Number(v), template: `SYSTEM:\n${t.system}\n\nUSER:\n${t.user}`, isActive: Number(v) === p.active })
+        .values({ promptId: row.id, version: Number(v), template: formatTemplate(t.system, t.user), isActive: active.length === 0 && Number(v) === p.active })
         .onConflictDoNothing();
     }
   }
