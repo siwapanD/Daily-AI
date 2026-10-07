@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0b0d12;
+  --foreground: #e6e8ee;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+}
+
+@layer components {
+  .btn { @apply inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-slate-100 hover:bg-white/10 disabled:opacity-50 cursor-pointer; }
+  .btn-primary { @apply inline-flex items-center gap-1 rounded-md bg-indigo-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-400 disabled:opacity-50 cursor-pointer; }
+  .btn-sm { @apply px-2 py-1 text-xs; }
+  .input { @apply w-full rounded-md border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none; }
+  .label { @apply mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400; }
+  .card { @apply rounded-lg border border-white/10 bg-white/[0.03] p-4; }
+  .h2 { @apply mb-3 text-xs font-bold uppercase tracking-[0.15em] text-slate-400; }
+  .link { @apply text-indigo-300 hover:text-indigo-200 hover:underline; }
+}
+
+.prose-dark h1 { @apply mb-3 mt-4 text-2xl font-bold; }
+.prose-dark h2 { @apply mb-2 mt-5 text-lg font-semibold text-indigo-200; }
+.prose-dark h3 { @apply mb-2 mt-4 font-semibold; }
+.prose-dark p { @apply my-2 leading-relaxed text-slate-200; }
+.prose-dark ul { @apply my-2 list-disc pl-6; }
+.prose-dark ol { @apply my-2 list-decimal pl-6; }
+.prose-dark li { @apply my-0.5 text-slate-200; }
+.prose-dark a { @apply text-indigo-300 underline; }
+.prose-dark code { @apply rounded bg-black/40 px-1 py-0.5 text-[0.85em]; }
+.prose-dark pre { @apply my-3 overflow-x-auto rounded-md bg-black/50 p-3; }
+.prose-dark pre code { @apply bg-transparent p-0; }
+.prose-dark blockquote { @apply my-2 border-l-2 border-indigo-400/60 pl-3 text-slate-400; }
+.prose-dark table { @apply my-3 w-full text-sm; }
+.prose-dark th, .prose-dark td { @apply border border-white/10 px-2 py-1 text-left; }
+.prose-dark hr { @apply my-4 border-white/10; }

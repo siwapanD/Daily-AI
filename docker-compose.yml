@@ -1,0 +1,48 @@
+# Production-style stack: PostgreSQL + DAILY AI + cron.
+#   cp .env.example .env   # edit secrets
+#   docker compose up -d --build
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dailyai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dailyai}
+      POSTGRES_DB: ${POSTGRES_DB:-dailyai}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dailyai} -d ${POSTGRES_DB:-dailyai}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Uncomment to reach the DB from the host (e.g. for `npm run dev`):
+    # ports: ["5432:5432"]
+
+  app:
+    build: .
+    image: daily-ai:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-dailyai}:${POSTGRES_PASSWORD:-dailyai}@db:5432/${POSTGRES_DB:-dailyai}
+      AUTO_MIGRATE: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+  cron:
+    image: alpine:3.20
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - app
+    # Calls the daily pipeline over HTTP with the cron secret (no workflow engine needed).
+    volumes:
+      - ./scripts/cron-entrypoint.sh:/cron-entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/cron-entrypoint.sh"]
+
+volumes:
+  pgdata:
