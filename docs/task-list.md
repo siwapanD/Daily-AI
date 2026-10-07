@@ -32,6 +32,12 @@ Status: ✅ done · ⏳ partial · ⬜ not started. Each task: Goal / Files / De
 | T24 | Prompt version UI: view, create, activate, compare usage per version (Settings → Prompts) | ✅ |
 | T25 | Full-text search: generated tsvector columns + GIN, ranked, web query syntax | ✅ |
 
-## P2 (not in MVP)
+## P2
 
-Advanced benchmark runner, social collectors, notifications (Telegram/LINE), semantic search/embeddings, multi-agent automation, Git auto-commit.
+| ID | Goal | Status |
+|---|---|---|
+| T30 | Daily digest notifications: Telegram, LINE Messaging API, Slack/Discord webhook; part of the daily job; test + manual send | ✅ |
+| T31 | Semantic search / embeddings | ⬜ |
+| T32 | Social collectors (Reddit, X, YouTube) | ⬜ |
+| T33 | Automated benchmark runner | ⬜ |
+| T34 | Git auto-commit of knowledge / playbook | ⬜ |

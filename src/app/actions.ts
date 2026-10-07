@@ -13,7 +13,8 @@ import { errMsg } from "@/lib/logger";
 import { createSource, updateSource, deleteSource, addManualUrl, fetchSource, getSource } from "@/lib/services/discovery";
 import { analyzeOne } from "@/lib/services/analysis";
 import { setUserAction } from "@/lib/services/discoveries";
-import { fetchJob, analyzeJob, digestJob, dailyJob } from "@/lib/services/jobs";
+import { fetchJob, analyzeJob, digestJob, notifyJob, dailyJob } from "@/lib/services/jobs";
+import { sendNotification } from "@/lib/services/notify";
 import { learnArticle, createKnowledge, updateKnowledge, deleteKnowledge } from "@/lib/services/knowledge";
 import {
   createExperiment, createExperimentFromArticle, updateExperiment, deleteExperiment, addResult, deleteResult, decideExperiment,
@@ -420,4 +421,25 @@ export async function createPromptVersionAction(fd: FormData) {
     const v = await createPromptVersion(d.key, d.system, d.user, d.activate === "on");
     return `${d.key}-v${v} created${d.activate === "on" ? " and activated" : ""}.`;
   }, ["/settings/prompts", "/settings"]);
+}
+
+// ---------- notifications ----------
+
+export async function sendTestNotificationAction() {
+  await run("/settings", async () => {
+    await limit("notify", 5);
+    const results = await sendNotification("✅ DAILY AI test message: notifications are working.");
+    if (!results.length) throw new Error("No notification channel configured. Add Telegram, LINE or webhook secrets first.");
+    return results.map((r) => `${r.channel}: ${r.ok ? "sent" : `failed (${r.error})`}`).join(" · ");
+  }, ["/settings"]);
+}
+
+export async function notifyDigestAction(fd: FormData) {
+  await run(safeBack(fd, "/digest"), async () => {
+    await limit("notify", 5);
+    const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().parse(fd.get("date") || undefined);
+    const r = await notifyJob(date);
+    if ("skipped" in r) throw new Error(`Not sent: ${r.skipped}`);
+    return `Digest ${r.digestDate} sent to ${r.sent.join(", ") || "no channel"}${r.failed.length ? `; failed: ${r.failed.map((f) => f.channel).join(", ")}` : ""}.`;
+  }, ["/settings"]);
 }

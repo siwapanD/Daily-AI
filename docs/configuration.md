@@ -17,6 +17,15 @@ All configuration is through environment variables (`.env`, read by Next.js and 
 | `GITHUB_TOKEN` | — | Raises the GitHub API limit from 60 to 5000 requests/hour. Can also be stored in Settings → Secrets |
 | `DAILY_JOB_CRON` | `0 6 * * *` | Schedule for the cron container (UTC). Quote it in `.env` |
 
+## Notifications
+| Variable | Description |
+|---|---|
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Send the daily digest to Telegram |
+| `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_TO` | Send it to LINE (Messaging API push) |
+| `NOTIFY_WEBHOOK_URL` | Send it to a Slack/Discord incoming webhook |
+
+All of these can also be stored encrypted in Settings → Secrets. See [notifications.md](notifications.md).
+
 ## AI provider
 | Variable | Default | Description |
 |---|---|---|

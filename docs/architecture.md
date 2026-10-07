@@ -115,6 +115,8 @@ Structured JSON logs (`src/lib/logger.ts`), `job_runs` (job history), `fetch_log
 
 ## 9. Scheduling
 
+The daily job ends by pushing the digest to Telegram / LINE / a Slack or Discord webhook when configured (`services/notify.ts`, see notifications.md).
+
 `cron` service in Compose (busybox `crond`) calls `POST /api/jobs/daily` with `CRON_SECRET` at 06:00 (configurable). Manual triggers: Fetch Now, Analyze Now, Generate Digest, Create Experiment.
 
 ## 10. Migrations

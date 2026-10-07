@@ -2,7 +2,10 @@ import { eq } from "drizzle-orm";
 import { db, schema } from "../db";
 import { encrypt, decrypt } from "../security/crypto";
 
-export const SECRET_KEYS = ["LLM_API_KEY", "GITHUB_TOKEN"] as const;
+export const SECRET_KEYS = [
+  "LLM_API_KEY", "GITHUB_TOKEN",
+  "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "LINE_CHANNEL_ACCESS_TOKEN", "LINE_TO", "NOTIFY_WEBHOOK_URL",
+] as const;
 export type SecretKey = (typeof SECRET_KEYS)[number];
 
 /** Env wins; otherwise the encrypted value stored in system_settings. Never send to the client. */
