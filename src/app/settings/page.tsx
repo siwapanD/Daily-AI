@@ -4,6 +4,7 @@ import { db, schema } from "@/lib/db";
 import { listSources } from "@/lib/services/discovery";
 import { recentJobs } from "@/lib/services/jobs";
 import { secretStatus, SECRET_KEYS } from "@/lib/services/settings";
+import { notificationChannels } from "@/lib/services/notify";
 import { tokensUsedToday } from "@/lib/llm";
 import { env } from "@/lib/env";
 import { AUTHORITY_LEVELS, SOURCE_TYPES } from "@/lib/constants";
@@ -11,12 +12,13 @@ import { PageHeader, Section } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import {
   createSourceAction, updateSourceAction, deleteSourceAction, fetchSourceAction, saveSecretAction, dailyNowAction,
+  sendTestNotificationAction, notifyDigestAction,
 } from "../actions";
 
 const time = (d: Date | null) => (d ? d.toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : "—");
 
 export default async function SettingsPage() {
-  const [sources, jobs, secrets, usage, runs, fetches, prompts] = await Promise.all([
+  const [sources, jobs, secrets, usage, runs, fetches, prompts, channels] = await Promise.all([
     listSources(),
     recentJobs(15),
     secretStatus(),
@@ -27,6 +29,7 @@ export default async function SettingsPage() {
       .orderBy(desc(schema.fetchLogs.createdAt)).limit(20),
     db.select({ key: schema.prompts.key, version: schema.promptVersions.version, active: schema.promptVersions.isActive, description: schema.prompts.description })
       .from(schema.promptVersions).innerJoin(schema.prompts, eq(schema.prompts.id, schema.promptVersions.promptId)),
+    notificationChannels(),
   ]);
   const llm = env.llm;
 
@@ -109,7 +112,7 @@ export default async function SettingsPage() {
             {SECRET_KEYS.map((k) => (
               <form key={k} action={saveSecretAction} className="card flex items-center gap-2 py-2">
                 <input type="hidden" name="name" value={k} />
-                <span className="w-32 font-mono text-xs">{k}</span>
+                <span className="w-56 shrink-0 font-mono text-xs">{k}</span>
                 <span className={`text-xs ${secrets[k] === "missing" ? "text-slate-500" : "text-emerald-300"}`}>{secrets[k]}</span>
                 <input name="value" type="password" autoComplete="off" placeholder={secrets[k] === "env" ? "set in env (env wins)" : "new value (empty = remove)"} className="input flex-1" />
                 <SubmitButton className="btn btn-sm">Save</SubmitButton>
@@ -119,6 +122,23 @@ export default async function SettingsPage() {
           </div>
         </Section>
       </div>
+
+      <Section title="Notifications">
+        <div className="card flex flex-wrap items-center gap-4 text-sm">
+          {(["telegram", "line", "webhook"] as const).map((c) => (
+            <span key={c}>
+              <span className="capitalize">{c}</span>:{" "}
+              <span className={channels[c] ? "text-emerald-300" : "text-slate-500"}>{channels[c] ? "configured" : "not configured"}</span>
+            </span>
+          ))}
+          <form action={sendTestNotificationAction} className="ml-auto"><SubmitButton className="btn btn-sm" pendingText="Sending…">Send test message</SubmitButton></form>
+          <form action={notifyDigestAction}><input type="hidden" name="back" value="/settings" /><SubmitButton className="btn btn-sm" pendingText="Sending…">Send latest digest</SubmitButton></form>
+        </div>
+        <p className="mt-2 text-xs text-slate-500">
+          The daily job sends the digest to every configured channel. Telegram: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID. LINE: LINE_CHANNEL_ACCESS_TOKEN + LINE_TO.
+          Slack/Discord: NOTIFY_WEBHOOK_URL. Set them in Secrets above or in env. See docs/notifications.md.
+        </p>
+      </Section>
 
       <Section title="Job history">
         <table className="w-full text-sm">

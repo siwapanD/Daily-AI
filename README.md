@@ -20,7 +20,7 @@ It's not a news aggregator. Finding something new doesn't mean adopting it: the 
 | **Radar** | Technology radar (ADOPT / TRIAL / ASSESS / WATCH / HOLD), updated when you decide an experiment |
 | **Watch** | Technologies, repos, models and companies that get a score boost |
 | **Digest** | The daily Markdown digest and its history |
-| **Settings** | Sources, AI provider status, encrypted secrets, job/fetch/LLM-usage history |
+| **Settings** | Sources, AI provider status, encrypted secrets, notifications (Telegram / LINE / Slack / Discord), prompt versions, job/fetch/LLM-usage history |
 
 Stack: Next.js 16 (App Router) · TypeScript · PostgreSQL · Drizzle ORM · Tailwind CSS · Docker. The AI provider is pluggable: OpenAI-compatible (OpenAI, OpenRouter, LiteLLM, Ollama, LM Studio), Anthropic, or an offline heuristic provider that needs no API key.
 
@@ -91,7 +91,7 @@ docker compose up -d --build
 curl http://localhost:3000/api/health
 ```
 
-The stack runs `db` (PostgreSQL 16), `app` (Next.js standalone, which migrates and seeds itself on start), and `cron` (calls the daily job at `DAILY_JOB_CRON`, 06:00 UTC by default). Put your reverse proxy in front of port 3000. See [docs/deployment.md](docs/deployment.md).
+The stack runs `db` (PostgreSQL 16), `app` (Next.js standalone, which migrates and seeds itself on start), and `cron` (calls the daily job at `DAILY_JOB_CRON`, 06:00 UTC by default). To get the digest in Telegram, LINE, Slack or Discord every morning, see [docs/notifications.md](docs/notifications.md). Put your reverse proxy in front of port 3000. See [docs/deployment.md](docs/deployment.md).
 
 ## Commands
 
@@ -117,7 +117,7 @@ Every API route except `/api/health` sits behind Basic Auth when `APP_PASSWORD` 
 | `/api/sources`, `/api/sources/:id` | GET, POST / GET, PATCH, DELETE |
 | `/api/discoveries` | GET (filters: `q, category, recommendation, minScore, sourceId, days, page`), POST `{url}` (manual URL) |
 | `/api/discoveries/:id` | GET, PATCH `{action: learn\|experiment\|watch\|ignore\|analyze\|clear}` |
-| `/api/jobs/:job` | POST, where `job` is `fetch`, `analyze`, `digest` or `daily` |
+| `/api/jobs/:job` | POST, where `job` is `fetch`, `analyze`, `digest`, `notify` or `daily` |
 | `/api/digest` | GET `?date=` / `?list=1`, POST to generate · `/api/digest/export` gives Markdown |
 | `/api/knowledge`, `/api/knowledge/:id` | GET, POST / GET, PATCH, DELETE · `/:id/export` gives Markdown |
 | `/api/experiments`, `/api/experiments/:id` | GET, POST (fields, or `{articleId}` for an AI draft) / GET (includes the benchmark comparison), PATCH, DELETE |
@@ -130,4 +130,4 @@ Every API route except `/api/health` sits behind Basic Auth when `APP_PASSWORD` 
 
 - [Architecture](docs/architecture.md) · [Database design](docs/database-design.md) · [Implementation plan](docs/implementation-plan.md) · [Task list](docs/task-list.md)
 - [Installation](docs/installation.md) · [Configuration](docs/configuration.md) · [Collectors](docs/collectors.md) · [AI provider](docs/ai-provider.md)
-- [Experiments](docs/experiments.md) · [Deployment](docs/deployment.md) · [Backup](docs/backup.md) · [Troubleshooting](docs/troubleshooting.md)
+- [Experiments](docs/experiments.md) · [Notifications](docs/notifications.md) · [Deployment](docs/deployment.md) · [Backup](docs/backup.md) · [Troubleshooting](docs/troubleshooting.md)

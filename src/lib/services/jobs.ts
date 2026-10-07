@@ -3,7 +3,8 @@ import { db, schema } from "../db";
 import { logger, errMsg } from "../logger";
 import { fetchAllSources } from "./discovery";
 import { runAnalysis } from "./analysis";
-import { generateDigest } from "./digest";
+import { generateDigest, getDigest } from "./digest";
+import { notifyDigest, notificationChannels } from "./notify";
 
 const running = new Set<string>();
 
@@ -51,11 +52,26 @@ export const digestJob = () =>
     return { digestDate: d.digestDate, generatedBy: d.generatedBy };
   });
 
-/** Daily: fetch → dedupe → classify → score → analyze top → technologies → digest. Each step isolated. */
+/** Push the latest digest to configured chat channels (Telegram / LINE / webhook). */
+export const notifyJob = (date?: string) =>
+  runJob("notify", async () => {
+    const channels = await notificationChannels();
+    if (!Object.values(channels).some(Boolean)) return { skipped: "no notification channel configured" };
+    const d = await getDigest(date);
+    if (!d) return { skipped: date ? `no digest for ${date}` : "no digest yet" };
+    const results = await notifyDigest(d);
+    const failed = results.filter((r) => !r.ok);
+    if (failed.length && failed.length === results.length) {
+      throw new Error(failed.map((r) => `${r.channel}: ${r.error}`).join("; "));
+    }
+    return { digestDate: d.digestDate, sent: results.filter((r) => r.ok).map((r) => r.channel), failed };
+  });
+
+/** Daily: fetch → dedupe → classify → score → analyze top → technologies → digest → notify. Each step isolated. */
 export async function dailyJob() {
   return runJob("daily", async () => {
     const out: Record<string, unknown> = {};
-    for (const [name, step] of [["fetch", fetchJob], ["analyze", analyzeJob], ["digest", digestJob]] as const) {
+    for (const [name, step] of [["fetch", fetchJob], ["analyze", analyzeJob], ["digest", digestJob], ["notify", () => notifyJob()]] as const) {
       try {
         out[name] = await step();
       } catch (e) {
