@@ -84,7 +84,7 @@ function metered(provider: PromptedProvider, fallbackModel: string): LLMProvider
   const raw = provider.chat.bind(provider);
   provider.chat = async (messages: ChatMessage[], opts: ChatOptions): Promise<ChatResult> => {
     const key = sha256(JSON.stringify([provider.name, opts.model, opts.maxTokens, messages]));
-    const [hit] = await db.select().from(schema.llmCache).where(eq(schema.llmCache.key, key));
+    const [hit] = opts.noCache ? [] : await db.select().from(schema.llmCache).where(eq(schema.llmCache.key, key));
     if (hit) {
       const res = { ...hit.response, model: opts.model, cached: true };
       await logRun(provider.name, opts, res, 0);
@@ -108,10 +108,11 @@ function metered(provider: PromptedProvider, fallbackModel: string): LLMProvider
     try {
       res = await attempt(opts.model);
     } catch (e) {
-      if (!fallbackModel || fallbackModel === opts.model) throw e;
+      if (opts.noFallback || !fallbackModel || fallbackModel === opts.model) throw e;
       logger.warn("llm call failed, trying fallback model", { model: opts.model, fallbackModel, error: errMsg(e) });
       res = await attempt(fallbackModel);
     }
+    if (opts.noCache) return res;
     await db
       .insert(schema.llmCache)
       .values({ key, response: { text: res.text, inputTokens: res.inputTokens, outputTokens: res.outputTokens } })

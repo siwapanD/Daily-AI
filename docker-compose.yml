@@ -32,6 +32,10 @@ services:
         condition: service_healthy
     ports:
       - "${APP_PORT:-3000}:3000"
+    # Optional Markdown/Git export: set GIT_EXPORT_DIR=/export in .env and uncomment.
+    # The host directory must be writable by the container user (uid of "app").
+    # volumes:
+    #   - ./knowledge-export:/export
 
   cron:
     image: alpine:3.20

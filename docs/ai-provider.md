@@ -42,6 +42,9 @@ Estimated cost comes from a built-in price table (Claude Haiku 4.5 $1/$5, Sonnet
 
 With the defaults (about 100 new items/day, 15 strong analyses), expect roughly 150–250k tokens per day.
 
+## Embeddings (semantic search)
+`src/lib/llm/embeddings.ts` has two providers: `OpenAICompatibleEmbedding` (`POST {EMBEDDING_BASE_URL}/embeddings`) and `LocalHashEmbedding` (offline signed feature hashing of words, bigrams and Thai/CJK character trigrams, 512 dimensions). Vectors are L2-normalized and stored in `embeddings` (`real[]`); similarity is a dot product computed in PostgreSQL, which is fast enough for tens of thousands of items without pgvector. API embedding calls count toward the daily token limit and are logged in `llm_runs` (task `embed`). The local provider is a lexical fallback: for meaning-based matches, configure a real embedding model.
+
 ## Prompts
 Default prompts are defined in `src/lib/prompts.ts`: `importance-classifier-v1`, `daily-analysis-v1`, `knowledge-summary-v1`, `experiment-generator-v1`, `digest-summary-v1`. The seed mirrors them into `prompts` / `prompt_versions`, and each `llm_runs` row records the version used.
 

@@ -23,6 +23,10 @@ export const DEFAULT_SOURCES: SeedSource[] = [
   // Tier 2 — technical
   { name: "Simon Willison", type: "rss", url: "https://simonwillison.net/atom/everything/", tier: 2, authorityLevel: "technical", reliabilityScore: 85 },
   { name: "Hacker News (AI, 100+ points)", type: "rss", url: "https://hnrss.org/newest?q=AI+OR+LLM+OR+Claude+OR+GPT+OR+agent&points=100", tier: 2, authorityLevel: "technical", reliabilityScore: 70 },
+  // Tier 3 — community (scored lower; only highly upvoted posts). Disabled by default: Reddit often
+  // blocks unauthenticated requests from datacenter IPs. Enable in Settings if your server can reach it.
+  { name: "Reddit r/LocalLLaMA", type: "reddit", url: "r/LocalLLaMA", tier: 3, authorityLevel: "community", reliabilityScore: 55, enabled: false, config: { minScore: 150 } },
+  { name: "Reddit r/ClaudeAI", type: "reddit", url: "r/ClaudeAI", tier: 3, authorityLevel: "community", reliabilityScore: 55, enabled: false, config: { minScore: 100 } },
   { name: "arXiv cs.SE", type: "rss", url: "https://rss.arxiv.org/rss/cs.SE", tier: 2, authorityLevel: "technical", reliabilityScore: 80, enabled: false, config: { limit: 20 } },
 ];
 

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { RateLimitError, enforceRateLimit } from "./security/rate-limit";
 import { UnsafeUrlError } from "./security/url";
 import { logger, errMsg } from "./logger";
+import { UserError } from "./errors";
 
 export class NotFoundError extends Error {
   constructor(what = "Not found") {
@@ -21,7 +22,7 @@ export function handle<A extends unknown[]>(fn: (...args: A) => Promise<Response
       if (e instanceof z.ZodError) return json({ error: "validation_error", issues: e.issues }, 400);
       if (e instanceof RateLimitError) return json({ error: e.message }, 429);
       if (e instanceof NotFoundError) return json({ error: e.message }, 404);
-      if (e instanceof UnsafeUrlError) return json({ error: e.message }, 400);
+      if (e instanceof UnsafeUrlError || e instanceof UserError) return json({ error: e.message }, 400);
       logger.error("api error", { error: errMsg(e) });
       return json({ error: errMsg(e) }, 500);
     }

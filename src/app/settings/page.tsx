@@ -5,6 +5,7 @@ import { listSources } from "@/lib/services/discovery";
 import { recentJobs } from "@/lib/services/jobs";
 import { secretStatus, SECRET_KEYS } from "@/lib/services/settings";
 import { notificationChannels } from "@/lib/services/notify";
+import { gitExportConfig } from "@/lib/services/git-export";
 import { tokensUsedToday } from "@/lib/llm";
 import { env } from "@/lib/env";
 import { AUTHORITY_LEVELS, SOURCE_TYPES } from "@/lib/constants";
@@ -12,7 +13,7 @@ import { PageHeader, Section } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import {
   createSourceAction, updateSourceAction, deleteSourceAction, fetchSourceAction, saveSecretAction, dailyNowAction,
-  sendTestNotificationAction, notifyDigestAction,
+  sendTestNotificationAction, notifyDigestAction, gitExportAction,
 } from "../actions";
 
 const time = (d: Date | null) => (d ? d.toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : "—");
@@ -103,6 +104,7 @@ export default async function SettingsPage() {
             <dt className="text-slate-400">Cost today</dt><dd>${usage.cost.toFixed(4)} ({usage.calls} calls)</dd>
             <dt className="text-slate-400">Per-task max tokens</dt><dd>{llm.maxTokensPerTask}</dd>
             <dt className="text-slate-400">Strong-model threshold</dt><dd>score ≥ {llm.analyzeThreshold}, max {llm.maxStrongPerRun}/run</dd>
+            <dt className="text-slate-400">Embeddings</dt><dd>{env.embeddings.provider === "local" ? "local (offline hashing)" : `${env.embeddings.model} @ ${env.embeddings.baseUrl}`}</dd>
           </dl>
           <p className="mt-2 text-xs text-slate-500">Provider and models are configured via environment variables (see docs/configuration.md).</p>
         </Section>
@@ -138,6 +140,20 @@ export default async function SettingsPage() {
           The daily job sends the digest to every configured channel. Telegram: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID. LINE: LINE_CHANNEL_ACCESS_TOKEN + LINE_TO.
           Slack/Discord: NOTIFY_WEBHOOK_URL. Set them in Secrets above or in env. See docs/notifications.md.
         </p>
+      </Section>
+
+      <Section title="Git export">
+        {(() => {
+          const g = gitExportConfig();
+          return (
+            <div className="card flex flex-wrap items-center gap-4 text-sm">
+              <span>Directory: <span className={g.dir ? "font-mono text-emerald-300" : "text-slate-500"}>{g.dir || "not configured (GIT_EXPORT_DIR)"}</span></span>
+              <span>Push: <span className={g.push ? "text-emerald-300" : "text-slate-500"}>{g.push ? "on" : "off"}</span></span>
+              <form action={gitExportAction} className="ml-auto"><SubmitButton className="btn btn-sm" pendingText="Exporting…">Export to Git now</SubmitButton></form>
+            </div>
+          );
+        })()}
+        <p className="mt-2 text-xs text-slate-500">Knowledge, playbook, experiments, prompts, radar and digests are written as Markdown and committed by the daily job. See docs/git-export.md.</p>
       </Section>
 
       <Section title="Job history">

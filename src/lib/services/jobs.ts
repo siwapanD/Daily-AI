@@ -5,6 +5,8 @@ import { fetchAllSources } from "./discovery";
 import { runAnalysis } from "./analysis";
 import { generateDigest, getDigest } from "./digest";
 import { notifyDigest, notificationChannels } from "./notify";
+import { embedPending } from "./embeddings";
+import { exportToGit } from "./git-export";
 
 const running = new Set<string>();
 
@@ -46,6 +48,9 @@ export async function fetchJob() {
 
 export const analyzeJob = () => runJob("analyze", runAnalysis);
 
+/** Refresh semantic-search vectors for new/changed discoveries and knowledge. */
+export const embedJob = () => runJob("embed", () => embedPending());
+
 export const digestJob = () =>
   runJob("digest", async () => {
     const d = await generateDigest();
@@ -67,11 +72,14 @@ export const notifyJob = (date?: string) =>
     return { digestDate: d.digestDate, sent: results.filter((r) => r.ok).map((r) => r.channel), failed };
   });
 
-/** Daily: fetch → dedupe → classify → score → analyze top → technologies → digest → notify. Each step isolated. */
+/** Export knowledge, playbook, experiments, prompts, radar and digests as Markdown to a git repo. */
+export const exportJob = () => runJob("export", async () => exportToGit());
+
+/** Daily: fetch → dedupe → classify → score → analyze top → technologies → embed → digest → notify → git export. Each step isolated. */
 export async function dailyJob() {
   return runJob("daily", async () => {
     const out: Record<string, unknown> = {};
-    for (const [name, step] of [["fetch", fetchJob], ["analyze", analyzeJob], ["digest", digestJob], ["notify", () => notifyJob()]] as const) {
+    for (const [name, step] of [["fetch", fetchJob], ["analyze", analyzeJob], ["embed", embedJob], ["digest", digestJob], ["notify", () => notifyJob()], ["export", exportJob]] as const) {
       try {
         out[name] = await step();
       } catch (e) {

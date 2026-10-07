@@ -15,6 +15,20 @@
       "when": 1791367566885,
       "tag": "0001_fulltext_search",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791377938433,
+      "tag": "0002_embeddings",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791378105880,
+      "tag": "0003_experiment_benchmark",
+      "breakpoints": true
     }
   ]
 }

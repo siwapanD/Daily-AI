@@ -13,8 +13,9 @@ import { errMsg } from "@/lib/logger";
 import { createSource, updateSource, deleteSource, addManualUrl, fetchSource, getSource } from "@/lib/services/discovery";
 import { analyzeOne } from "@/lib/services/analysis";
 import { setUserAction } from "@/lib/services/discoveries";
-import { fetchJob, analyzeJob, digestJob, notifyJob, dailyJob } from "@/lib/services/jobs";
+import { fetchJob, analyzeJob, digestJob, notifyJob, exportJob, dailyJob } from "@/lib/services/jobs";
 import { sendNotification } from "@/lib/services/notify";
+import { saveBenchmarkConfig, runBenchmark } from "@/lib/services/benchmark";
 import { learnArticle, createKnowledge, updateKnowledge, deleteKnowledge } from "@/lib/services/knowledge";
 import {
   createExperiment, createExperimentFromArticle, updateExperiment, deleteExperiment, addResult, deleteResult, decideExperiment,
@@ -441,5 +442,37 @@ export async function notifyDigestAction(fd: FormData) {
     const r = await notifyJob(date);
     if ("skipped" in r) throw new Error(`Not sent: ${r.skipped}`);
     return `Digest ${r.digestDate} sent to ${r.sent.join(", ") || "no channel"}${r.failed.length ? `; failed: ${r.failed.map((f) => f.channel).join(", ")}` : ""}.`;
+  }, ["/settings"]);
+}
+
+// ---------- automated benchmark ----------
+
+export async function saveBenchmarkAction(fd: FormData) {
+  const eid = id.parse(fd.get("id"));
+  await run(`/experiments/${eid}`, async () => {
+    let config: unknown;
+    try {
+      config = JSON.parse(String(fd.get("config") ?? ""));
+    } catch {
+      throw new Error("Benchmark config is not valid JSON");
+    }
+    await saveBenchmarkConfig(eid, config);
+    if (fd.get("run") === "1") {
+      await limit("benchmark", 3);
+      const r = await runBenchmark(eid);
+      return `Benchmark finished: ${r.summary.map((s) => `${s.variant} ${s.passed}/${s.total}`).join(", ")}.`;
+    }
+    return "Benchmark config saved.";
+  }, ["/experiments"]);
+}
+
+// ---------- git export ----------
+
+export async function gitExportAction() {
+  await run("/settings", async () => {
+    await limit("job", 6);
+    const r = await exportJob();
+    if ("skipped" in r) throw new Error(`Not exported: ${r.skipped}`);
+    return r.committed ? `Exported ${r.files} files; commit ${r.commit}${r.pushed ? " pushed" : ""}.` : `Exported ${r.files} files; nothing changed since the last commit.`;
   }, ["/settings"]);
 }

@@ -16,6 +16,17 @@ export const env = {
   get allowPrivateFetch() { return process.env.ALLOW_PRIVATE_FETCH === "true"; },
   get fetchTimeoutMs() { return num("FETCH_TIMEOUT_MS", 15000); },
   get githubToken() { return process.env.GITHUB_TOKEN ?? ""; },
+  embeddings: {
+    /** "local" (no API, feature hashing) or "openai-compatible" (/embeddings endpoint). */
+    get provider() {
+      const p = process.env.EMBEDDING_PROVIDER;
+      if (p === "local" || p === "openai-compatible") return p;
+      return process.env.EMBEDDING_MODEL ? "openai-compatible" : "local";
+    },
+    get baseUrl() { return process.env.EMBEDDING_BASE_URL || process.env.LLM_BASE_URL || ""; },
+    get model() { return process.env.EMBEDDING_MODEL ?? ""; },
+    get apiKey() { return process.env.EMBEDDING_API_KEY ?? ""; },
+  },
   llm: {
     get provider() { return (process.env.LLM_PROVIDER ?? "heuristic") as "heuristic" | "openai-compatible" | "anthropic"; },
     get baseUrl() { return process.env.LLM_BASE_URL ?? ""; },

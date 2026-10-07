@@ -26,6 +26,25 @@ All configuration is through environment variables (`.env`, read by Next.js and 
 
 All of these can also be stored encrypted in Settings → Secrets. See [notifications.md](notifications.md).
 
+## Semantic search
+| Variable | Default | Description |
+|---|---|---|
+| `EMBEDDING_PROVIDER` | `local`, or `openai-compatible` when `EMBEDDING_MODEL` is set | `local` = offline lexical hashing (no key, weaker); `openai-compatible` = `/embeddings` endpoint |
+| `EMBEDDING_BASE_URL` | `LLM_BASE_URL` | e.g. `https://api.openai.com/v1`, `http://ollama:11434/v1` |
+| `EMBEDDING_MODEL` | — | e.g. `text-embedding-3-small`, `nomic-embed-text` (Ollama) |
+| `EMBEDDING_API_KEY` | `LLM_API_KEY` | Key for the embeddings endpoint |
+
+Changing the model re-embeds everything on the next `embed` run (vectors are stored per model).
+
+## Git export
+| Variable | Default | Description |
+|---|---|---|
+| `GIT_EXPORT_DIR` | — | Git working copy to write Markdown into (enables the export step) |
+| `GIT_EXPORT_PUSH` | `false` | Push after committing |
+| `GIT_AUTHOR_NAME` / `GIT_AUTHOR_EMAIL` | `DAILY AI` / `daily-ai@localhost` | Commit author |
+
+See [git-export.md](git-export.md).
+
 ## AI provider
 | Variable | Default | Description |
 |---|---|---|

@@ -37,7 +37,7 @@ Status: ✅ done · ⏳ partial · ⬜ not started. Each task: Goal / Files / De
 | ID | Goal | Status |
 |---|---|---|
 | T30 | Daily digest notifications: Telegram, LINE Messaging API, Slack/Discord webhook; part of the daily job; test + manual send | ✅ |
-| T31 | Semantic search / embeddings | ⬜ |
-| T32 | Social collectors (Reddit, X, YouTube) | ⬜ |
-| T33 | Automated benchmark runner | ⬜ |
-| T34 | Git auto-commit of knowledge / playbook | ⬜ |
+| T31 | Semantic search: embeddings (OpenAI-compatible or offline local), semantic mode in Search/API, Related items on Learn/Knowledge, `embed` step in the daily job | ✅ |
+| T32 | Social collectors: Reddit (top posts above an upvote threshold, RSS fallback) and YouTube channels. X/Twitter is not included: there is no free API | ✅ |
+| T33 | Automated benchmark runner: variants (model + system prompt) × cases, auto-scored (contains/exact/regex/LLM judge), results recorded per variant | ✅ |
+| T34 | Git export: Markdown export of knowledge/playbook/experiments/prompts/radar/digests, commit on change, optional push | ✅ |
