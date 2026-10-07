@@ -169,10 +169,16 @@ export async function discoveryAction(fd: FormData) {
   const articleId = id.parse(fd.get("id"));
   const action = z.enum([...USER_ACTIONS, "analyze", "clear"]).parse(fd.get("action"));
   if (action === "learn") {
-    await run(back, async () => {
+    let target = back;
+    try {
       await limit("llm", 15);
       await learnArticle(articleId);
-    }, ["/", "/learn", "/knowledge"]);
+      revalidatePath("/learn");
+      target = withParam(`/learn/${articleId}`, "msg", "Study note saved to Knowledge (status LEARNING).");
+    } catch (e) {
+      target = withParam(back, "err", errMsg(e));
+    }
+    redirect(target);
   }
   if (action === "experiment") {
     let target = back;

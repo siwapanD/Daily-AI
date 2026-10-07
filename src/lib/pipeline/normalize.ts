@@ -23,6 +23,16 @@ export function htmlToText(html: string): string {
       .replace(/<[^>]+>/g, " "),
   )
     .replace(/[ \t\f\v\r]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** Remove aggregator boilerplate lines (e.g. hnrss "Article URL: … Comments URL: … Points: …"). */
+export function stripFeedBoilerplate(text: string): string {
+  return text
+    .replace(/(Article URL|Comments URL|Points|# Comments):\s*\S*/gi, " ")
+    .replace(/[ \t]+/g, " ")
     .replace(/\n\s*\n+/g, "\n\n")
     .trim();
 }
@@ -66,7 +76,7 @@ export interface NormalizedItem {
 export function normalizeItem(raw: RawItem): NormalizedItem | null {
   const title = truncate(htmlToText(raw.title ?? "").replace(/\s+/g, " "), 300);
   if (!title || !raw.url) return null;
-  const content = truncate(htmlToText(raw.content ?? ""), 20000);
+  const content = truncate(stripFeedBoilerplate(htmlToText(raw.content ?? "")), 20000);
   const published = raw.publishedAt && !isNaN(raw.publishedAt.getTime()) ? raw.publishedAt : null;
   return {
     url: raw.url.trim(),

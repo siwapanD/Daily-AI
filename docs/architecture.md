@@ -81,7 +81,7 @@ interface LLMProvider {
 }
 ```
 
-Adapters: `openai-compatible` (OpenAI, OpenRouter, LiteLLM, Ollama, LM Studio, vLLM), `anthropic` (Messages API), `heuristic` (offline, deterministic). All use `fetch`; no vendor SDKs.
+Adapters: `openai-compatible` (OpenAI, OpenRouter, LiteLLM, Ollama, LM Studio, vLLM), `anthropic` (Messages API), `heuristic` (offline, deterministic). The OpenAI-compatible adapter uses `fetch`; the Anthropic adapter uses the official `@anthropic-ai/sdk`.
 
 Cost controls: daily token limit, per-task max tokens, cheap→strong model cascade, fallback model, response cache (`llm_cache`, keyed by provider+model+prompt hash), content dedupe before any LLM call, versioned prompts. When the daily budget is exhausted the gateway degrades to the heuristic provider instead of failing. Every call is logged to `llm_runs` (provider, model, prompt version, tokens, estimated cost, latency, success, error).
 

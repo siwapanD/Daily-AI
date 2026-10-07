@@ -68,8 +68,8 @@ export function canonicalizeUrl(input: string): string {
     for (const key of [...url.searchParams.keys()]) if (TRACKING.test(key)) url.searchParams.delete(key);
     url.searchParams.sort();
     if ((url.protocol === "https:" && url.port === "443") || (url.protocol === "http:" && url.port === "80")) url.port = "";
+    url.pathname = url.pathname.replace(/\/+$/, "") || "/";
     let out = url.toString();
-    if (url.pathname !== "/" && out.endsWith("/") && !url.search) out = out.slice(0, -1);
     if (url.pathname === "/" && !url.search) out = out.replace(/\/$/, "");
     return out.replace(/^http:/, "https:");
   } catch {

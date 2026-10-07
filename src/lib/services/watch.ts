@@ -27,7 +27,9 @@ export function watchMatches(w: Pick<WatchItem, "kind" | "pattern">, a: { title:
     if (hit && hit[1] === owner && (repo === "*" || hit[2] === repo)) return true;
     if (w.kind === "repository") return false;
   }
-  const re = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRe(pattern)}($|[^\\p{L}\\p{N}])`, "iu");
+  // "Claude Code" also matches "claude-code" / "claude_code".
+  const body = escapeRe(pattern).replace(/\s+/g, "[\\s_-]+");
+  const re = new RegExp(`(^|[^\\p{L}\\p{N}])${body}($|[^\\p{L}\\p{N}])`, "iu");
   return re.test(a.title) || re.test(a.excerpt ?? "");
 }
 
