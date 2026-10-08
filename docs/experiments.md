@@ -9,6 +9,29 @@ The Experiment Engine is how DAILY AI turns news into evidence.
 4. **Benchmark**: the results table shows the mean per variant and the % change against `baseline`. Green means better (lower time/tokens/cost/interventions/retries, higher quality/accuracy/pass rate).
 5. **Decide**: ADOPT, WATCH, REJECT or RETEST, plus a conclusion.
 
+## Automated benchmark (LLM)
+For questions like "model A vs model B" or "short prompt vs structured prompt", the experiment page has an **Automated benchmark** section. Define it in JSON:
+
+```json
+{
+  "variants": [
+    { "label": "baseline", "model": "claude-haiku-4-5" },
+    { "label": "new", "model": "claude-sonnet-5-5", "system": "Think step by step, then answer concisely." }
+  ],
+  "cases": [
+    { "name": "sql", "input": "Which PostgreSQL keyword returns inserted rows? One word.", "expected": "RETURNING", "match": "contains" },
+    { "name": "review", "input": "Find the bug: for (let i = 0; i <= arr.length; i++) ...", "expected": "Identifies the off-by-one error", "match": "judge" }
+  ],
+  "maxTokens": 800
+}
+```
+
+- `match`: `contains`, `exact`, `regex`, or `judge` (the strong model grades the answer PASS/FAIL against `expected`).
+- Limits: up to 6 variants, 30 cases and 120 calls per run.
+- **Save & run** calls every variant on every case, without the response cache or fallback model, so latency and cost are real. It records one result row per variant (time = total latency, tokens, cost, accuracy % = pass rate, retries = errors) and appends a per-case ✅/❌ table to the execution notes.
+- All calls count toward the daily token limit and appear in `llm_runs` with prompt version `benchmark:<code>:<variant>`.
+- API: `POST /api/experiments/:id/benchmark` with `{ "config": … }` (optional if already saved).
+
 ## Decision side effects
 | Decision | Radar ring for the experiment's technology | Linked knowledge status |
 |---|---|---|

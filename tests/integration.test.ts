@@ -36,6 +36,14 @@ const { setSecret, getSecret } = await import("@/lib/services/settings");
 const { searchAll } = await import("@/lib/services/search");
 const { listDiscoveries } = await import("@/lib/services/discoveries");
 const { createPromptVersion, activatePromptVersion, getActivePrompt, listPromptVersions } = await import("@/lib/services/prompts");
+const { embedPending, semanticSearch, relatedTo } = await import("@/lib/services/embeddings");
+const { saveBenchmarkConfig, runBenchmark } = await import("@/lib/services/benchmark");
+const { createExperiment } = await import("@/lib/services/experiments");
+const { exportToGit } = await import("@/lib/services/git-export");
+const { execFileSync } = await import("node:child_process");
+const fsp = await import("node:fs/promises");
+const os = await import("node:os");
+const nodePath = await import("node:path");
 const { eq } = await import("drizzle-orm");
 
 describe.skipIf(!available)("pipeline integration", () => {
@@ -137,6 +145,19 @@ describe.skipIf(!available)("pipeline integration", () => {
     expect((await searchAll("claude-co")).articles.length).toBe(1); // substring fallback on titles
   });
 
+  it("embeds content and finds it by meaning", async () => {
+    const first = await embedPending();
+    expect(first).toMatchObject({ provider: "local", remaining: 0 });
+    expect(first.embedded).toBeGreaterThanOrEqual(4); // 3 articles + knowledge item
+    expect((await embedPending()).embedded).toBe(0); // unchanged content is skipped
+    const hits = await semanticSearch("agents planning mode MCP");
+    expect(hits[0]).toMatchObject({ type: expect.any(String), title: expect.stringMatching(/claude-code v9\.0\.0/) });
+    const [cc] = await db.select().from(schema.articles).where(eq(schema.articles.title, "anthropics/claude-code v9.0.0"));
+    const related = await relatedTo("article", cc.id);
+    expect(related.some((r) => r.type === "knowledge")).toBe(true); // its own Learn note
+    expect(related.find((r) => r.type === "article" && r.id === cc.id)).toBeUndefined();
+  });
+
   it("creates, activates and resolves prompt versions; seed keeps the UI choice", async () => {
     expect((await getActivePrompt("digest-summary"))?.version).toBe(1);
     const v = await createPromptVersion("digest-summary", "Be terse.", "{{items}}", true);
@@ -189,6 +210,80 @@ describe.skipIf(!available)("pipeline integration", () => {
     } finally {
       vi.unstubAllGlobals();
       process.env.LLM_PROVIDER = "heuristic";
+    }
+  });
+
+  it("runs an automated benchmark across models and records results per variant", async () => {
+    Object.assign(process.env, {
+      LLM_PROVIDER: "openai-compatible", LLM_BASE_URL: "https://llm.example/v1", LLM_API_KEY: "k",
+      LLM_CHEAP_MODEL: "claude-haiku-4-5", LLM_STRONG_MODEL: "claude-sonnet-5-5", LLM_DAILY_TOKEN_LIMIT: "100000000",
+    });
+    const fetchMock = vi.fn(async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body));
+      const user = body.messages[body.messages.length - 1].content as string;
+      // Judge calls grade "off-by-one" answers as PASS.
+      const text = user.includes("Answer to grade") ? (user.split("Answer to grade:")[1].includes("off-by-one") ? "PASS" : "FAIL")
+        : body.model === "good-model" ? (user.includes("keyword") ? "RETURNING" : "It is an off-by-one bug") : "I don't know";
+      return new Response(JSON.stringify({ model: body.model, choices: [{ message: { content: text } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const exp = await createExperiment({ title: "Model comparison" });
+      await saveBenchmarkConfig(exp.id, {
+        variants: [{ label: "baseline", model: "weak-model" }, { label: "new", model: "good-model", system: "Be precise." }],
+        cases: [
+          { name: "sql", input: "Which keyword returns inserted rows?", expected: "RETURNING" },
+          { name: "bug", input: "Find the bug in the loop", expected: "Identifies off-by-one", match: "judge" },
+        ],
+      });
+      const r = await runBenchmark(exp.id);
+      expect(r.summary.map((s) => [s.variant, s.passed, s.total])).toEqual([["baseline", 0, 2], ["new", 2, 2]]);
+      const e = await getExperiment(exp.id);
+      const rows = Object.fromEntries(e!.results.map((x) => [x.variant, x]));
+      expect(rows.new.accuracy).toBe(100);
+      expect(rows.baseline.accuracy).toBe(0);
+      expect(rows.new.tokens).toBe(30);
+      expect(e!.executionNotes).toContain("Automated benchmark");
+      expect(e!.status).toBe("running");
+      const sys = fetchMock.mock.calls.map(([, init]) => JSON.parse(String(init.body))).find((b) => b.model === "good-model" && b.messages[0].role === "system");
+      expect(sys.messages[0].content).toBe("Be precise.");
+      // Benchmarks bypass the response cache: the second run calls the API again.
+      const calls = fetchMock.mock.calls.length;
+      await runBenchmark(exp.id);
+      expect(fetchMock.mock.calls.length).toBe(calls * 2);
+    } finally {
+      vi.unstubAllGlobals();
+      process.env.LLM_PROVIDER = "heuristic";
+    }
+  });
+
+  it("exports knowledge, experiments and playbook to git, commits only on change, and pushes", async () => {
+    const tmp = await fsp.mkdtemp(nodePath.join(os.tmpdir(), "dailyai-export-"));
+    const remote = nodePath.join(tmp, "remote.git");
+    const work = nodePath.join(tmp, "work");
+    execFileSync("git", ["init", "-q", "--bare", remote]);
+    execFileSync("git", ["init", "-q", work]);
+    execFileSync("git", ["-C", work, "remote", "add", "origin", remote]);
+    await fsp.writeFile(nodePath.join(work, "NOTES.md"), "user file\n"); // must never be touched
+    process.env.GIT_EXPORT_DIR = work;
+    process.env.GIT_EXPORT_PUSH = "true";
+    try {
+      expect(await exportToGit()).toMatchObject({ committed: true, pushed: true });
+      const files = execFileSync("git", ["-C", work, "ls-files"]).toString().split("\n");
+      expect(files).toEqual(expect.arrayContaining(["README.md", "radar.md", "playbook/AI-ENGINEERING-PLAYBOOK.md", "playbook/versions/v1.1.md"]));
+      expect(files.some((f) => /^experiments\/EXP-\d{4}-001\.md$/.test(f))).toBe(true);
+      expect(files.some((f) => f.startsWith("knowledge/"))).toBe(true);
+      expect(files).not.toContain("NOTES.md");
+      expect(await exportToGit()).toMatchObject({ committed: false }); // nothing changed
+      const [k] = await db.select().from(schema.knowledgeItems).limit(1);
+      await db.update(schema.knowledgeItems).set({ contentMd: k.contentMd + "\n\nEdited." }).where(eq(schema.knowledgeItems.id, k.id));
+      expect(await exportToGit()).toMatchObject({ committed: true, changed: 1 });
+      expect(execFileSync("git", ["-C", remote, "rev-list", "--count", "HEAD"]).toString().trim()).toBe("2");
+      expect(await fsp.readFile(nodePath.join(work, "NOTES.md"), "utf8")).toBe("user file\n");
+    } finally {
+      delete process.env.GIT_EXPORT_DIR;
+      delete process.env.GIT_EXPORT_PUSH;
+      await fsp.rm(tmp, { recursive: true, force: true });
     }
   });
 });

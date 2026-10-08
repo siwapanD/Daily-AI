@@ -6,7 +6,9 @@ import { PageHeader, Badge, Section, Empty, fmtDate } from "@/components/ui";
 import { Markdown } from "@/components/markdown";
 import { ExperimentForm } from "@/components/experiment-form";
 import { SubmitButton } from "@/components/submit-button";
-import { addResultAction, deleteResultAction, decideExperimentAction, deleteExperimentAction } from "../../actions";
+import { addResultAction, deleteResultAction, decideExperimentAction, deleteExperimentAction, saveBenchmarkAction } from "../../actions";
+import { exampleBenchmark } from "@/lib/services/benchmark";
+import { env } from "@/lib/env";
 
 function Block({ title, text }: { title: string; text: string }) {
   return (
@@ -111,6 +113,24 @@ export default async function ExperimentPage({ params, searchParams }: { params:
               <Block title="Problems" text={e.problems} />
             </div>
           )}
+
+          <Section title="Automated benchmark (LLM)">
+            <form action={saveBenchmarkAction} className="card space-y-2">
+              <input type="hidden" name="id" value={e.id} />
+              <p className="text-sm text-slate-400">
+                Each <b>variant</b> (model + optional system prompt) answers every <b>case</b>. Answers are scored with
+                <code> contains</code>, <code>exact</code>, <code>regex</code> or <code>judge</code> (the strong model grades against <code>expected</code>).
+                One result row per variant is recorded above, with time, tokens, cost, accuracy and errors. Calls are never cached.
+              </p>
+              <textarea name="config" rows={16} className="input font-mono text-xs"
+                defaultValue={JSON.stringify(e.benchmark ?? exampleBenchmark(env.llm.cheapModel, env.llm.strongModel), null, 2)} />
+              <div className="flex flex-wrap items-center gap-2">
+                <SubmitButton className="btn">Save config</SubmitButton>
+                <button type="submit" name="run" value="1" className="btn-primary">Save &amp; run benchmark</button>
+                {env.llm.provider === "heuristic" && <span className="text-xs text-amber-300">Needs an LLM provider: set LLM_PROVIDER / LLM_API_KEY.</span>}
+              </div>
+            </form>
+          </Section>
 
           <Section title="Decision">
             {e.decision && (

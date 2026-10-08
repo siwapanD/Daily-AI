@@ -4,6 +4,7 @@ import type { Source } from "../db/schema";
 import { collectors, domainAuthority } from "../collectors";
 import { fetchPage } from "../collectors/web";
 import { parseRepo } from "../collectors/github";
+import { parseSubreddit, parseYoutubeChannel } from "../collectors/social";
 import { normalizeItem, type RawItem } from "../pipeline/normalize";
 import { canonicalizeUrl, assertPublicUrl } from "../security/url";
 import { env } from "../env";
@@ -36,6 +37,16 @@ async function validateSourceUrl(type: Source["type"], url: string): Promise<str
     return `${repo.owner}/${repo.repo}`;
   }
   if (type === "manual") return url || "manual";
+  if (type === "reddit") {
+    const sub = parseSubreddit(url);
+    if (!sub) throw new Error("Reddit source must be a subreddit name, r/name or a reddit.com/r/... URL");
+    return `r/${sub}`;
+  }
+  if (type === "youtube") {
+    const id = parseYoutubeChannel(url);
+    if (!id) throw new Error("YouTube source must be a channel id (UC…) or a youtube.com/channel/UC… URL");
+    return id;
+  }
   await assertPublicUrl(url, env.allowPrivateFetch);
   return url.trim();
 }

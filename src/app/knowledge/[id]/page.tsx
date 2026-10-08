@@ -7,6 +7,7 @@ import { Markdown } from "@/components/markdown";
 import { KnowledgeForm } from "@/components/knowledge-form";
 import { SubmitButton } from "@/components/submit-button";
 import { knowledgeStatusAction, deleteKnowledgeAction } from "../../actions";
+import { Related } from "@/components/related";
 
 export default async function KnowledgeItemPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: string }> }) {
   const id = Number((await params).id);
@@ -36,6 +37,7 @@ export default async function KnowledgeItemPage({ params, searchParams }: { para
               </form>
               {k.tags.length > 0 && <div><span className="label">Tags</span><p className="flex flex-wrap gap-1">{k.tags.map((t) => <span key={t} className="rounded bg-white/5 px-1.5 text-xs text-slate-400">{t}</span>)}</p></div>}
             </div>
+            <Related type="knowledge" id={k.id} />
             <form action={deleteKnowledgeAction} className="card">
               <input type="hidden" name="id" value={k.id} />
               <SubmitButton className="btn btn-sm text-red-300">Delete item</SubmitButton>

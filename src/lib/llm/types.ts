@@ -10,6 +10,9 @@ export interface ChatOptions {
   maxTokens: number;
   task: string;
   promptVersion?: string;
+  /** Benchmarks: measure the real call (no response cache, no fallback model). */
+  noCache?: boolean;
+  noFallback?: boolean;
 }
 
 export interface ChatResult {

@@ -8,6 +8,7 @@ import { Markdown } from "@/components/markdown";
 import { SubmitButton } from "@/components/submit-button";
 import { discoveryAction } from "../../actions";
 import { WEIGHTS } from "@/lib/pipeline/score";
+import { Related } from "@/components/related";
 
 function Act({ id, action, children, primary }: { id: number; action: string; children: React.ReactNode; primary?: boolean }) {
   return (
@@ -99,6 +100,7 @@ export default async function LearnArticlePage({ params }: { params: Promise<{ i
             <Act id={id} action="analyze">Re-analyze</Act>
             <Act id={id} action={a.userAction === "ignore" ? "clear" : "ignore"}>{a.userAction === "ignore" ? "Un-ignore" : "Ignore"}</Act>
           </div>
+          <Related type="article" id={id} />
           {experiments.length > 0 && (
             <div className="card">
               <p className="h2">Experiments</p>

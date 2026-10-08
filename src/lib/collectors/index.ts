@@ -1,12 +1,15 @@
 import { rssCollector } from "./rss";
 import { githubCollector } from "./github";
 import { webCollector } from "./web";
+import { redditCollector, youtubeCollector } from "./social";
 import type { Collector } from "./types";
 
 export const collectors: Record<string, Collector> = {
   rss: rssCollector,
   github: githubCollector,
   web: webCollector,
+  reddit: redditCollector,
+  youtube: youtubeCollector,
   // Manual sources hold user-submitted items only; nothing to poll.
   manual: async () => ({ items: [] }),
 };

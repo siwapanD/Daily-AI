@@ -28,7 +28,7 @@ export type RadarRing = (typeof RADAR_RINGS)[number];
 export const RADAR_QUADRANTS = ["Models", "Tools", "Techniques", "Platforms"] as const;
 
 export const WATCH_KINDS = ["technology", "repository", "model", "company", "framework", "feature"] as const;
-export const SOURCE_TYPES = ["rss", "github", "web", "manual"] as const;
+export const SOURCE_TYPES = ["rss", "github", "web", "reddit", "youtube", "manual"] as const;
 export const AUTHORITY_LEVELS = ["official", "technical", "community"] as const;
 export const USER_ACTIONS = ["learn", "experiment", "watch", "ignore"] as const;
 

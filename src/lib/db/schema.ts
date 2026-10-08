@@ -20,7 +20,7 @@ const updatedAt = () => timestamp("updated_at", { withTimezone: true }).notNull(
 export const sources = pgTable("sources", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  type: text("type").$type<"rss" | "github" | "web" | "manual">().notNull(),
+  type: text("type").$type<"rss" | "github" | "web" | "reddit" | "youtube" | "manual">().notNull(),
   url: text("url").notNull(),
   config: jsonb("config").$type<Record<string, unknown>>().notNull().default({}),
   state: jsonb("state").$type<Record<string, unknown>>().notNull().default({}),
@@ -127,6 +127,8 @@ export const experiments = pgTable("experiments", {
   problems: text("problems").notNull().default(""),
   conclusion: text("conclusion").notNull().default(""),
   decision: text("decision"),
+  /** Automated benchmark config (variants × cases); see services/benchmark.ts. */
+  benchmark: jsonb("benchmark").$type<Record<string, unknown>>(),
   decidedAt: timestamp("decided_at", { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
@@ -255,6 +257,17 @@ export const playbookVersions = pgTable("playbook_versions", {
   experimentId: integer("experiment_id").references(() => experiments.id, { onDelete: "set null" }),
   createdAt: createdAt(),
 });
+
+/** Semantic search vectors (L2-normalized, so dot product = cosine similarity). */
+export const embeddings = pgTable("embeddings", {
+  entityType: text("entity_type").$type<"article" | "knowledge">().notNull(),
+  entityId: integer("entity_id").notNull(),
+  model: text("model").notNull(),
+  dims: integer("dims").notNull(),
+  vector: real("vector").array().notNull(),
+  contentHash: text("content_hash").notNull(),
+  updatedAt: updatedAt(),
+}, (t) => [primaryKey({ columns: [t.entityType, t.entityId] }), index("embeddings_model_idx").on(t.model)]);
 
 export type Source = typeof sources.$inferSelect;
 export type Article = typeof articles.$inferSelect;
